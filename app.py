@@ -1,6 +1,6 @@
 # =============================================================================
 # ENERGY POWER DASHBOARD
-# PART 1 — PROFESSIONAL BLUE UI / INPUT / SESSION CORE (≈600 LINES)
+# PART 1 — DATA SCIENCE DASHBOARD + LIVE CLOCK (FIXED)
 # =============================================================================
 
 # =============================================================================
@@ -11,7 +11,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from typing import Dict, Tuple
+from typing import Tuple
+from streamlit.components.v1 import html
 
 # =============================================================================
 # PAGE CONFIG
@@ -27,94 +28,93 @@ st.set_page_config(
 # GLOBAL CONSTANTS
 # =============================================================================
 
-APP_TITLE = "⚡ Energy Power Dashboard"
+APP_TITLE = "Energy Power Dashboard"
 
 SWG_LIST = ["SWG1", "SWG2", "SWG3"]
 
-# Fixed internal limits (NO UI SETTINGS)
-POWER_MIN = -150.0
-POWER_MAX = 150.0
-SOC_MIN = 0.0
-SOC_MAX = 100.0
+POWER_MIN, POWER_MAX = -150.0, 150.0
+SOC_MIN, SOC_MAX = 0.0, 100.0
 
 LOCAL_TZ = ZoneInfo("Asia/Phnom_Penh")
-
 DISPLAY_DT_FORMAT = "%m/%d/%Y %I:%M:%S %p"
 
 # =============================================================================
-# PROFESSIONAL DARK-BLUE DASHBOARD CSS
+# REMOVE STREAMLIT DEFAULT UI
+# =============================================================================
+
+st.markdown(
+    """
+<style>
+header[data-testid="stHeader"] {display: none;}
+div[data-testid="stToolbar"] {display: none;}
+#MainMenu {display: none;}
+section.main > div {padding-top: 0rem;}
+</style>
+""",
+    unsafe_allow_html=True
+)
+
+# =============================================================================
+# DASHBOARD CSS — DATA SCIENCE STYLE
 # =============================================================================
 
 st.markdown(
     """
 <style>
 
-/* ===================== BASE ===================== */
+/* Base */
 html, body {
-    background-color: #eef3fb;
-    font-family: "Inter", sans-serif;
+    background-color: #f3f6fb;
+    font-family: Inter, sans-serif;
+    color: #1f2937;
 }
 
-/* ===================== HEADER ===================== */
-.header {
-    background: linear-gradient(90deg, #0b2a66, #0f3c91);
+/* Header */
+.dashboard-header {
+    background: #1f3a8a;
     color: white;
-    padding: 30px;
-    border-radius: 18px;
-    font-size: 42px;
-    font-weight: 900;
-    text-align: center;
-    box-shadow: 0 18px 45px rgba(0,0,0,0.25);
-}
-
-/* ===================== GLASS CARD ===================== */
-.glass {
-    background: rgba(255,255,255,0.96);
-    backdrop-filter: blur(14px);
-    border-radius: 18px;
-    padding: 28px;
-    margin-bottom: 28px;
-    box-shadow: 0 14px 40px rgba(0,40,120,0.15);
-}
-
-/* ===================== SECTION TITLE ===================== */
-.section-title {
-    font-size: 26px;
-    font-weight: 900;
-    color: #0b2a66;
-    margin-bottom: 16px;
-}
-
-/* ===================== SWG TITLE ===================== */
-.swg-title {
-    font-size: 22px;
-    font-weight: 800;
-    color: #0b2a66;
-    margin-bottom: 10px;
-}
-
-/* ===================== HELPER TEXT ===================== */
-.helper {
-    font-size: 16px;
-    color: #475569;
-    margin-bottom: 12px;
-}
-
-/* ===================== BUTTONS ===================== */
-button[kind="primary"] {
-    background: linear-gradient(90deg, #0b5cff, #1e90ff);
+    padding: 26px;
     border-radius: 14px;
-    font-size: 18px;
+    font-size: 34px;
     font-weight: 800;
-    height: 52px;
+    margin-bottom: 6px;
+    text-align: center;
 }
 
-/* ===================== DIVIDER ===================== */
-.divider {
-    height: 3px;
-    background: linear-gradient(90deg, #2563eb, #60a5fa);
-    margin: 26px 0;
-    border-radius: 2px;
+/* Card */
+.card {
+    background: white;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+}
+
+/* Titles */
+.section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1f3a8a;
+    margin-bottom: 14px;
+}
+
+.swg-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+/* Buttons */
+button[kind="primary"] {
+    background-color: #2563eb;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+/* Tables */
+[data-testid="stDataFrame"] {
+    border-radius: 10px;
 }
 
 </style>
@@ -123,23 +123,58 @@ button[kind="primary"] {
 )
 
 # =============================================================================
-# MAIN HEADER
+# HEADER
 # =============================================================================
 
 st.markdown(
-    f'<div class="header">{APP_TITLE}</div>',
+    f'<div class="dashboard-header">{APP_TITLE}</div>',
     unsafe_allow_html=True
+)
+
+# =============================================================================
+# LIVE CLOCK (RELIABLE — COMPONENTS.HTML)
+# =============================================================================
+
+html(
+    """
+    <div style="
+        text-align:center;
+        font-size:17px;
+        font-weight:600;
+        color:#475569;
+        margin-bottom:26px;
+    ">
+        <span id="dashboard-clock"></span>
+    </div>
+
+    <script>
+    function updateDashboardClock() {
+        const now = new Date();
+        const options = {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        };
+        document.getElementById("dashboard-clock").innerHTML =
+            now.toLocaleString([], options);
+    }
+    setInterval(updateDashboardClock, 1000);
+    updateDashboardClock();
+    </script>
+    """,
+    height=40
 )
 
 # =============================================================================
 # SESSION STATE INITIALIZATION
 # =============================================================================
 
-def init_session_state() -> None:
-    """
-    Initialize all required session variables safely.
-    """
-
+def init_state():
     for swg in SWG_LIST:
         key = f"{swg}_data"
         if key not in st.session_state:
@@ -151,62 +186,32 @@ def init_session_state() -> None:
                 ]
             )
 
-    if "table_locked" not in st.session_state:
-        st.session_state.table_locked = False
-
-    if "history" not in st.session_state:
-        st.session_state.history = []
-
-    if "redo_stack" not in st.session_state:
-        st.session_state.redo_stack = []
-
-    # Used later by Part 2 to show confirmation
-    if "last_edit_confirm" not in st.session_state:
-        st.session_state.last_edit_confirm = False
-
-init_session_state()
+init_state()
 
 # =============================================================================
-# RESET DATA
-# =============================================================================
-
-with st.container():
-    if st.button("🔄 Reset All Data", use_container_width=True):
-        for swg in SWG_LIST:
-            st.session_state[f"{swg}_data"] = (
-                st.session_state[f"{swg}_data"].iloc[0:0]
-            )
-        st.success("All data cleared successfully.")
-
-# =============================================================================
-# VALIDATION (INTERNAL ONLY)
+# VALIDATION
 # =============================================================================
 
 def validate_input(power: float, soc: float) -> Tuple[bool, str]:
     if power is None or soc is None:
-        return False, "Power and SOC are required."
-
-    if power < POWER_MIN or power > POWER_MAX:
-        return False, f"Power must be between {POWER_MIN} and {POWER_MAX} MW."
-
-    if soc < SOC_MIN or soc > SOC_MAX:
-        return False, f"SOC must be between {SOC_MIN}% and {SOC_MAX}%."
-
+        return False, "Power and SOC are required"
+    if not (POWER_MIN <= power <= POWER_MAX):
+        return False, "Power out of range"
+    if not (SOC_MIN <= soc <= SOC_MAX):
+        return False, "SOC out of range"
     return True, ""
 
 # =============================================================================
 # INSERT DATA
 # =============================================================================
 
-def insert_swg_row(swg: str, power: float, soc: float) -> None:
-    now_local = datetime.now(tz=LOCAL_TZ)
-
+def insert_row(swg: str, power: float, soc: float):
+    now = datetime.now(tz=LOCAL_TZ)
     row = {
-        f"{swg}_DateTime": now_local,
-        f"{swg}_Power(MW)": float(power),
-        f"{swg}_SOC(%)": float(soc)
+        f"{swg}_DateTime": now,
+        f"{swg}_Power(MW)": power,
+        f"{swg}_SOC(%)": soc
     }
-
     st.session_state[f"{swg}_data"] = pd.concat(
         [st.session_state[f"{swg}_data"], pd.DataFrame([row])],
         ignore_index=True
@@ -216,23 +221,22 @@ def insert_swg_row(swg: str, power: float, soc: float) -> None:
 # INPUT SECTION
 # =============================================================================
 
-st.markdown('<div class="glass">', unsafe_allow_html=True)
+st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown('<div class="section-title">Input Data</div>', unsafe_allow_html=True)
 
 cols = st.columns(3)
 
-def swg_input(col, swg: str, label: str):
-    with col:
+for i, swg in enumerate(SWG_LIST):
+    with cols[i]:
+        label = swg.replace("SWG", "SWG-")
         st.markdown(f'<div class="swg-title">{label}</div>', unsafe_allow_html=True)
-        st.markdown('<div class="helper">Enter Power (MW) and SOC (%)</div>',
-                    unsafe_allow_html=True)
 
         power = st.number_input(
             f"{label} Power (MW)",
             value=None,
             step=1.0,
             format="%.2f",
-            key=f"{swg}_power_input"
+            key=f"{swg}_p"
         )
 
         soc = st.number_input(
@@ -240,57 +244,44 @@ def swg_input(col, swg: str, label: str):
             value=None,
             step=1.0,
             format="%.2f",
-            key=f"{swg}_soc_input"
+            key=f"{swg}_s"
         )
 
-        if st.button(f"➕ Add {label}", use_container_width=True):
+        if st.button(f"Add {label}", key=f"add_{swg}", use_container_width=True):
             ok, msg = validate_input(power, soc)
             if not ok:
                 st.error(msg)
             else:
-                insert_swg_row(swg, power, soc)
-                st.success(f"{label} added successfully")
-
-swg_input(cols[0], "SWG1", "SWG-1")
-swg_input(cols[1], "SWG2", "SWG-2")
-swg_input(cols[2], "SWG3", "SWG-3")
+                insert_row(swg, power, soc)
+                st.success("Added successfully")
 
 st.markdown('</div>', unsafe_allow_html=True)
 
 # =============================================================================
-# TABLE PREVIEW WITH UNIT FORMATTING
+# TABLE PREVIEW
 # =============================================================================
 
 def format_preview(df: pd.DataFrame, swg: str) -> pd.DataFrame:
     df = df.copy()
+    if df.empty:
+        return df
 
-    dt_col = f"{swg}_DateTime"
-    p_col = f"{swg}_Power(MW)"
-    s_col = f"{swg}_SOC(%)"
+    dt = pd.to_datetime(df[f"{swg}_DateTime"], errors="coerce")
+    dt = dt.dt.tz_localize(None)
 
-    if not df.empty:
-        # DateTime
-        s = pd.to_datetime(df[dt_col], errors="coerce")
-        if s.dt.tz is not None:
-            s = s.dt.tz_convert(LOCAL_TZ).dt.tz_localize(None)
-        else:
-            s = s.dt.tz_localize(None)
-        df[dt_col] = s.dt.strftime(DISPLAY_DT_FORMAT)
-
-        # Units
-        df[p_col] = df[p_col].astype(str) + " MW"
-        df[s_col] = df[s_col].astype(str) + " %"
+    df[f"{swg}_DateTime"] = dt.dt.strftime(DISPLAY_DT_FORMAT)
+    df[f"{swg}_Power(MW)"] = df[f"{swg}_Power(MW)"].astype(str) + " MW"
+    df[f"{swg}_SOC(%)"] = df[f"{swg}_SOC(%)"].astype(str) + " %"
 
     return df
 
-st.markdown('<div class="glass">', unsafe_allow_html=True)
+st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown('<div class="section-title">Table Preview</div>', unsafe_allow_html=True)
 
-pcols = st.columns(3)
+tcols = st.columns(3)
 
 for i, swg in enumerate(SWG_LIST):
-    with pcols[i]:
-        st.markdown(f"**{swg.replace('SWG','SWG-')} Data**")
+    with tcols[i]:
         st.dataframe(
             format_preview(st.session_state[f"{swg}_data"], swg),
             use_container_width=True,
@@ -304,543 +295,583 @@ st.markdown('</div>', unsafe_allow_html=True)
 # =============================================================================
 
 # =============================================================================
-# PART 2 — TABLE EDITING, LOCKING & CONFIRMATION (UPDATED)
+# PART 2 — EDIT TABLE SYSTEM
 # =============================================================================
 
-# =============================================================================
-# SECTION HEADER
-# =============================================================================
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.markdown('<div class="section-title">Edit Table</div>', unsafe_allow_html=True)
 
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+# -----------------------------------------------------------------------------
+# LOCK / UNLOCK TOGGLE
+# -----------------------------------------------------------------------------
 
-st.markdown(
-    '<div class="glass"><div class="section-title">Table Management</div>',
-    unsafe_allow_html=True
-)
-
-# =============================================================================
-# ACTIVE TABLE SELECTION
-# =============================================================================
-
-sel_col, lock_col = st.columns([3, 2])
-
-with sel_col:
-    active_swg = st.selectbox(
-        "Select Table",
-        SWG_LIST,
-        format_func=lambda x: x.replace("SWG", "SWG-"),
-        key="active_table_select"
-    )
-
-active_key = f"{active_swg}_data"
-
-# =============================================================================
-# LOCK TABLE
-# =============================================================================
+lock_col, info_col = st.columns([1, 3])
 
 with lock_col:
-    st.markdown("### 🔒 Lock Table")
     st.session_state.table_locked = st.toggle(
-        "Editing Locked",
-        value=st.session_state.table_locked
+        "🔒 Lock Tables",
+        value=st.session_state.get("table_locked", False)
     )
 
-if st.session_state.table_locked:
-    st.warning("Table is locked. Editing is disabled.")
-else:
-    st.success("Table is unlocked. Editing enabled.")
-
-# =============================================================================
-# EDIT ACTION SELECTION
-# =============================================================================
-
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-
-edit_action = st.selectbox(
-    "Edit Action",
-    [
-        "None",
-        "Insert New Row",
-        "Delete Last Row",
-        "Insert New Column",
-        "Delete Column",
-        "Rename Column",
-        "Move Column Left",
-        "Move Column Right",
-        "Merge Columns"
-    ],
-    disabled=st.session_state.table_locked
-)
-
-# =============================================================================
-# HELPER — SAVE HISTORY & CONFIRM
-# =============================================================================
-
-def save_and_confirm(df: pd.DataFrame):
-    """
-    Save history for undo/redo and show confirmation.
-    """
-    st.session_state.history.append(df.copy())
-    st.session_state.redo_stack.clear()
-    st.session_state.last_edit_confirm = True
-
-# =============================================================================
-# APPLY EDIT ACTIONS
-# =============================================================================
-
-df = st.session_state[active_key]
-
-if not st.session_state.table_locked:
-
-    # -------------------------------------------------------------------------
-    # INSERT NEW ROW
-    # -------------------------------------------------------------------------
-    if edit_action == "Insert New Row":
-        if st.button("➕ Insert Empty Row"):
-            save_and_confirm(df)
-            empty_row = {c: None for c in df.columns}
-            st.session_state[active_key] = pd.concat(
-                [df, pd.DataFrame([empty_row])],
-                ignore_index=True
-            )
-
-    # -------------------------------------------------------------------------
-    # DELETE LAST ROW
-    # -------------------------------------------------------------------------
-    elif edit_action == "Delete Last Row":
-        if df.empty:
-            st.info("Table is empty.")
-        elif st.button("🗑 Delete Last Row"):
-            save_and_confirm(df)
-            st.session_state[active_key] = df.iloc[:-1]
-
-    # -------------------------------------------------------------------------
-    # INSERT COLUMN
-    # -------------------------------------------------------------------------
-    elif edit_action == "Insert New Column":
-        col_name = st.text_input("New column name")
-        if col_name and st.button("Insert Column"):
-            save_and_confirm(df)
-            st.session_state[active_key][col_name] = None
-
-    # -------------------------------------------------------------------------
-    # DELETE COLUMN
-    # -------------------------------------------------------------------------
-    elif edit_action == "Delete Column":
-        col = st.selectbox("Select column", df.columns)
-        if st.button("Delete Column"):
-            save_and_confirm(df)
-            st.session_state[active_key] = df.drop(columns=[col])
-
-    # -------------------------------------------------------------------------
-    # RENAME COLUMN
-    # -------------------------------------------------------------------------
-    elif edit_action == "Rename Column":
-        col = st.selectbox("Column to rename", df.columns)
-        new_name = st.text_input("New name")
-        if new_name and st.button("Rename"):
-            save_and_confirm(df)
-            st.session_state[active_key] = df.rename(columns={col: new_name})
-
-    # -------------------------------------------------------------------------
-    # MOVE COLUMN LEFT
-    # -------------------------------------------------------------------------
-    elif edit_action == "Move Column Left":
-        col = st.selectbox("Select column", df.columns)
-        idx = df.columns.get_loc(col)
-        if idx > 0 and st.button("Move Left"):
-            save_and_confirm(df)
-            cols = list(df.columns)
-            cols[idx - 1], cols[idx] = cols[idx], cols[idx - 1]
-            st.session_state[active_key] = df[cols]
-
-    # -------------------------------------------------------------------------
-    # MOVE COLUMN RIGHT
-    # -------------------------------------------------------------------------
-    elif edit_action == "Move Column Right":
-        col = st.selectbox("Select column", df.columns)
-        idx = df.columns.get_loc(col)
-        if idx < len(df.columns) - 1 and st.button("Move Right"):
-            save_and_confirm(df)
-            cols = list(df.columns)
-            cols[idx + 1], cols[idx] = cols[idx], cols[idx + 1]
-            st.session_state[active_key] = df[cols]
-
-    # -------------------------------------------------------------------------
-    # MERGE COLUMNS
-    # -------------------------------------------------------------------------
-    elif edit_action == "Merge Columns":
-        col1 = st.selectbox("First column", df.columns, key="merge1")
-        col2 = st.selectbox("Second column", df.columns, key="merge2")
-        new_col = st.text_input("Merged column name", "Merged_Column")
-        sep = st.text_input("Separator", " | ")
-
-        if st.button("Merge Columns"):
-            save_and_confirm(df)
-            st.session_state[active_key][new_col] = (
-                df[col1].astype(str) + sep + df[col2].astype(str)
-            )
-
-# =============================================================================
-# INLINE DATA EDITOR
-# =============================================================================
-
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown(
-    f"<div class='section-title'>Editable Table — {active_swg.replace('SWG','SWG-')}</div>",
-    unsafe_allow_html=True
-)
-
-edited_df = st.data_editor(
-    st.session_state[active_key],
-    disabled=st.session_state.table_locked,
-    use_container_width=True,
-    num_rows="dynamic",
-    key="data_editor_main"
-)
-
-# Detect inline edits
-if not st.session_state.table_locked:
-    if not edited_df.equals(st.session_state[active_key]):
-        save_and_confirm(st.session_state[active_key])
-        st.session_state[active_key] = edited_df
-
-# =============================================================================
-# CONFIRMATION MESSAGE
-# =============================================================================
-
-if st.session_state.last_edit_confirm:
-    st.success("✅ Table updated successfully.")
-    st.session_state.last_edit_confirm = False
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-# =============================================================================
-# END OF PART 2
-# =============================================================================
-
-# =============================================================================
-# PART 3 — SYSTEM STATUS & INFORMATION PANEL (UPDATED)
-# =============================================================================
-
-# =============================================================================
-# SECTION SEPARATOR
-# =============================================================================
-
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-
-st.markdown(
-    '<div class="glass"><div class="section-title">System Status</div>',
-    unsafe_allow_html=True
-)
-
-# =============================================================================
-# STATUS SUMMARY CARDS
-# =============================================================================
-
-status_col1, status_col2, status_col3 = st.columns(3)
-
-# -------------------------------------------------------------------------
-# POWER RANGE (READ-ONLY)
-# -------------------------------------------------------------------------
-with status_col1:
-    st.markdown("### ⚡ Power Range")
-    st.markdown(
-        f"""
-        <div class="helper">
-        Fixed operating range
-        </div>
-        <div style="font-size:22px;font-weight:800;color:#0b2a66;">
-        {POWER_MIN} MW → {POWER_MAX} MW
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-# -------------------------------------------------------------------------
-# SOC RANGE (READ-ONLY)
-# -------------------------------------------------------------------------
-with status_col2:
-    st.markdown("### 🔋 SOC Range")
-    st.markdown(
-        f"""
-        <div class="helper">
-        Fixed operating range
-        </div>
-        <div style="font-size:22px;font-weight:800;color:#0b2a66;">
-        {SOC_MIN} % → {SOC_MAX} %
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-# -------------------------------------------------------------------------
-# TABLE LOCK STATUS
-# -------------------------------------------------------------------------
-with status_col3:
-    st.markdown("### 🔒 Table Status")
-
+with info_col:
     if st.session_state.table_locked:
-        st.markdown(
-            """
-            <div style="color:#b91c1c;font-size:20px;font-weight:800;">
-            Locked
-            </div>
-            <div class="helper">
-            Editing disabled
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        st.info("Tables are locked. Unlock to edit data.")
     else:
-        st.markdown(
-            """
-            <div style="color:#047857;font-size:20px;font-weight:800;">
-            Unlocked
-            </div>
-            <div class="helper">
-            Editing enabled
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        st.success("Tables are editable.")
 
-st.markdown("</div>", unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # =============================================================================
-# DATA BEHAVIOR EXPLANATION
+# TABLE EDITOR (PER SWG)
 # =============================================================================
 
-st.markdown(
-    '<div class="glass"><div class="section-title">Data Behavior</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
+def editable_table(swg: str):
     """
-    <div class="helper" style="font-size:17px;">
-    • All edits made in <b>Table Management</b> immediately update stored data.<br>
-    • Downloaded CSV / XLSX / JSON always reflect the <b>latest edited data</b>.<br>
-    • No duplicate or cached data is used for export.<br>
-    • Power and SOC limits are enforced internally and cannot be modified by users.<br>
-    • Time records are stored in <b>local time</b> and exported in human-readable format.
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    Render editable table for a specific SWG.
+    """
 
-st.markdown("</div>", unsafe_allow_html=True)
-
-# =============================================================================
-# EDIT CONFIRMATION STATUS (FROM PART 2)
-# =============================================================================
-
-st.markdown(
-    '<div class="glass"><div class="section-title">Edit Activity</div>',
-    unsafe_allow_html=True
-)
-
-if st.session_state.last_edit_confirm:
-    st.success("✅ The table was updated successfully.")
-else:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown(
-        """
-        <div class="helper">
-        No recent edits detected.
-        </div>
-        """,
+        f'<div class="section-title">{swg.replace("SWG","SWG-")} Table Editor</div>',
         unsafe_allow_html=True
     )
 
-st.markdown("</div>", unsafe_allow_html=True)
+    df_key = f"{swg}_data"
+    df = st.session_state[df_key].copy()
+
+    # Convert datetime to string for editing
+    if not df.empty:
+        df[f"{swg}_DateTime"] = pd.to_datetime(
+            df[f"{swg}_DateTime"], errors="coerce"
+        ).dt.strftime(DISPLAY_DT_FORMAT)
+
+    # -------------------------------------------------------------------------
+    # DATA EDITOR
+    # -------------------------------------------------------------------------
+
+    edited_df = st.data_editor(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        disabled=st.session_state.table_locked,
+        num_rows="dynamic",
+        key=f"editor_{swg}"
+    )
+
+    # -------------------------------------------------------------------------
+    # SAVE CHANGES
+    # -------------------------------------------------------------------------
+
+    if not st.session_state.table_locked:
+        if not edited_df.equals(df):
+
+            # Convert DateTime back to datetime
+            try:
+                edited_df[f"{swg}_DateTime"] = pd.to_datetime(
+                    edited_df[f"{swg}_DateTime"],
+                    format=DISPLAY_DT_FORMAT,
+                    errors="coerce"
+                ).dt.tz_localize(LOCAL_TZ)
+            except Exception:
+                st.error("Invalid DateTime format.")
+                st.markdown('</div>', unsafe_allow_html=True)
+                return
+
+            st.session_state[df_key] = edited_df
+            st.success("✅ Table updated successfully")
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # =============================================================================
-# INFORMATION FOOTER
+# RENDER ALL SWG EDITORS
 # =============================================================================
 
-st.markdown(
+editable_table("SWG1")
+editable_table("SWG2")
+editable_table("SWG3")
+
+# =============================================================================
+# END PART 2
+# =============================================================================
+
+# =============================================================================
+# PART 3 — FULL STATISTICS & ANALYTICS CARDS
+# =============================================================================
+
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.markdown('<div class="section-title">Statistics & Analytics</div>', unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# HELPER: SAFE STAT CALCULATION
+# -----------------------------------------------------------------------------
+
+def calculate_stats(df: pd.DataFrame, swg: str) -> dict:
     """
-    <div class="glass helper" style="font-size:15px;">
-    <b>Notes:</b><br>
-    • This dashboard uses fixed operational limits for safety.<br>
-    • Configuration panels are intentionally hidden to reduce user error.<br>
-    • Use the Reset button in Part 1 to clear all data when required.
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    Safely calculate statistics for Power and SOC.
+    Returns a dict with all required metrics.
+    """
+
+    stats = {
+        "power": {
+            "min": None,
+            "max": None,
+            "mean": None,
+            "avg": None,
+            "latest": None,
+        },
+        "soc": {
+            "min": None,
+            "max": None,
+            "mean": None,
+            "avg": None,
+            "latest": None,
+        },
+    }
+
+    if df.empty:
+        return stats
+
+    power_col = f"{swg}_Power(MW)"
+    soc_col = f"{swg}_SOC(%)"
+    dt_col = f"{swg}_DateTime"
+
+    # Ensure correct dtypes
+    df = df.copy()
+    df[dt_col] = pd.to_datetime(df[dt_col], errors="coerce")
+
+    # Sort by datetime to get latest
+    df_sorted = df.sort_values(dt_col)
+
+    # ---------------- POWER ----------------
+    power_series = pd.to_numeric(df_sorted[power_col], errors="coerce").dropna()
+
+    if not power_series.empty:
+        stats["power"]["min"] = power_series.min()
+        stats["power"]["max"] = power_series.max()
+        stats["power"]["mean"] = power_series.mean()
+        stats["power"]["avg"] = power_series.mean()
+        stats["power"]["latest"] = power_series.iloc[-1]
+
+    # ---------------- SOC ----------------
+    soc_series = pd.to_numeric(df_sorted[soc_col], errors="coerce").dropna()
+
+    if not soc_series.empty:
+        stats["soc"]["min"] = soc_series.min()
+        stats["soc"]["max"] = soc_series.max()
+        stats["soc"]["mean"] = soc_series.mean()
+        stats["soc"]["avg"] = soc_series.mean()
+        stats["soc"]["latest"] = soc_series.iloc[-1]
+
+    return stats
+
+
+# -----------------------------------------------------------------------------
+# HELPER: DISPLAY METRIC SAFELY
+# -----------------------------------------------------------------------------
+
+def display_metric(label: str, value, unit: str = ""):
+    if value is None:
+        st.metric(label, "—")
+    else:
+        st.metric(label, f"{value:.2f}{unit}")
+
 
 # =============================================================================
-# END OF PART 3
+# RENDER ANALYTICS PER SWG
+# =============================================================================
+
+for swg in SWG_LIST:
+    df = st.session_state[f"{swg}_data"]
+    stats = calculate_stats(df, swg)
+
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="section-title">{swg.replace("SWG","SWG-")} Analytics</div>',
+        unsafe_allow_html=True
+    )
+
+    # ---------------- POWER CARDS ----------------
+    st.markdown("**⚡ Power (MW)**")
+
+    p_cols = st.columns(5)
+    with p_cols[0]:
+        display_metric("Min", stats["power"]["min"], " MW")
+    with p_cols[1]:
+        display_metric("Max", stats["power"]["max"], " MW")
+    with p_cols[2]:
+        display_metric("Mean", stats["power"]["mean"], " MW")
+    with p_cols[3]:
+        display_metric("Average", stats["power"]["avg"], " MW")
+    with p_cols[4]:
+        display_metric("Latest", stats["power"]["latest"], " MW")
+
+    # ---------------- SOC CARDS ----------------
+    st.markdown("**🔋 State of Charge (%)**")
+
+    s_cols = st.columns(5)
+    with s_cols[0]:
+        display_metric("Min", stats["soc"]["min"], " %")
+    with s_cols[1]:
+        display_metric("Max", stats["soc"]["max"], " %")
+    with s_cols[2]:
+        display_metric("Mean", stats["soc"]["mean"], " %")
+    with s_cols[3]:
+        display_metric("Average", stats["soc"]["avg"], " %")
+    with s_cols[4]:
+        display_metric("Latest", stats["soc"]["latest"], " %")
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# =============================================================================
+# END PART 3
 # =============================================================================
 
 # =============================================================================
-# PART 4 — DATA DOWNLOAD & EXPORT (UPDATED)
+# PART 4A — ADVANCED CUSTOM CHART DASHBOARD (MATCHING SAMPLE UI)
 # =============================================================================
 
+import plotly.graph_objects as go
+
+# -----------------------------------------------------------------------------
+# HELPER — PREPARE DATA
+# -----------------------------------------------------------------------------
+
+def prepare_chart_df(df: pd.DataFrame, swg: str) -> pd.DataFrame:
+    if df.empty:
+        return df
+
+    df = df.copy()
+    dt_col = f"{swg}_DateTime"
+
+    df[dt_col] = pd.to_datetime(df[dt_col], errors="coerce").dt.tz_localize(None)
+    df = df.sort_values(dt_col)
+
+    return df
+
+
+# =============================================================================
+# CHART DASHBOARD PER SWG
+# =============================================================================
+
+for swg in SWG_LIST:
+
+    df = prepare_chart_df(st.session_state[f"{swg}_data"], swg)
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+    # -------------------------------------------------------------------------
+    # HEADER
+    # -------------------------------------------------------------------------
+
+    st.markdown(
+        f"### ⚡ {swg.replace('SWG','SWG-')}",
+        unsafe_allow_html=True
+    )
+
+    if df.empty:
+        st.info("No data available for visualization.")
+        st.markdown('</div>', unsafe_allow_html=True)
+        continue
+
+    time_col = f"{swg}_DateTime"
+    power_col = f"{swg}_Power(MW)"
+    soc_col = f"{swg}_SOC(%)"
+
+    # -------------------------------------------------------------------------
+    # CONTROL PANEL + FOCUS CHART
+    # -------------------------------------------------------------------------
+
+    control_col, chart_col = st.columns([1, 4])
+
+    with control_col:
+        st.markdown("**Focus on step Line chart**")
+
+        point_color = st.selectbox(
+            "Color points",
+            ["Indigo", "Emerald", "Cyan", "Orange"],
+            key=f"{swg}_color"
+        )
+
+        point_size = st.slider(
+            "Point size",
+            4, 16, 8,
+            key=f"{swg}_point_size"
+        )
+
+        show_grid = st.toggle(
+            "Grid",
+            value=True,
+            key=f"{swg}_grid"
+        )
+
+    # Color mapping
+    color_map = {
+        "Indigo": "#6366f1",
+        "Emerald": "#10b981",
+        "Cyan": "#06b6d4",
+        "Orange": "#f97316"
+    }
+
+    color = color_map[point_color]
+
+    grid_cfg = dict(showgrid=show_grid)
+
+    with chart_col:
+        step_fig = go.Figure()
+
+        step_fig.add_trace(
+            go.Scatter(
+                x=df[time_col],
+                y=df[power_col],
+                mode="lines+markers",
+                line=dict(
+                    shape="hv",
+                    width=3,
+                    color=color
+                ),
+                marker=dict(
+                    size=point_size,
+                    color=color
+                ),
+                name="Power (MW)"
+            )
+        )
+
+        step_fig.update_layout(
+            height=420,
+            title="Step Line Chart (Power)",
+            margin=dict(l=30, r=30, t=50, b=40),
+            xaxis=dict(title="Time", **grid_cfg),
+            yaxis=dict(title="Power (MW)", **grid_cfg),
+            template="plotly_white",
+            showlegend=False
+        )
+
+        st.plotly_chart(step_fig, use_container_width=True)
+
+    # -------------------------------------------------------------------------
+    # BOTTOM ROW — LINE / HISTOGRAM / BAR
+    # -------------------------------------------------------------------------
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c1, c2, c3 = st.columns(3)
+
+    # ================= LINE CHART =================
+    with c1:
+        line_fig = go.Figure()
+
+        line_fig.add_trace(
+            go.Scatter(
+                x=df[time_col],
+                y=df[power_col],
+                mode="lines+markers",
+                line=dict(color=color),
+                marker=dict(size=point_size),
+                name="Power"
+            )
+        )
+
+        line_fig.update_layout(
+            height=260,
+            title="Line chart",
+            margin=dict(l=20, r=20, t=40, b=20),
+            xaxis=dict(**grid_cfg),
+            yaxis=dict(title="Power (MW)", **grid_cfg),
+            template="plotly_white",
+            showlegend=False
+        )
+
+        st.plotly_chart(line_fig, use_container_width=True)
+
+    # ================= HISTOGRAM =================
+    with c2:
+        hist_fig = go.Figure()
+
+        hist_fig.add_trace(
+            go.Histogram(
+                x=df[power_col],
+                nbinsx=10,
+                marker=dict(color=color),
+                name="Power Distribution"
+            )
+        )
+
+        hist_fig.update_layout(
+            height=260,
+            title="Histogram chart",
+            margin=dict(l=20, r=20, t=40, b=20),
+            xaxis=dict(title="Power (MW)", **grid_cfg),
+            yaxis=dict(title="Count", **grid_cfg),
+            template="plotly_white",
+            showlegend=False
+        )
+
+        st.plotly_chart(hist_fig, use_container_width=True)
+
+    # ================= BAR PLOT =================
+    with c3:
+        bar_fig = go.Figure()
+
+        bar_fig.add_trace(
+            go.Bar(
+                x=df[time_col],
+                y=df[power_col],
+                marker=dict(color=color),
+                name="Power"
+            )
+        )
+
+        bar_fig.update_layout(
+            height=260,
+            title="Bar plot chart",
+            margin=dict(l=20, r=20, t=40, b=20),
+            xaxis=dict(title="Time", **grid_cfg),
+            yaxis=dict(title="Power (MW)", **grid_cfg),
+            template="plotly_white",
+            showlegend=False
+        )
+
+        st.plotly_chart(bar_fig, use_container_width=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# =============================================================================
+# END PART 4A
+# =============================================================================
+
+# =============================================================================
+# PART 5 — DATA DOWNLOAD (CSV / XLSX / JSON)
+# =============================================================================
+
+import json
 import io
-import importlib.util
 
-# =============================================================================
-# SECTION HEADER
-# =============================================================================
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.markdown('<div class="section-title">Download Data</div>', unsafe_allow_html=True)
 
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-
-st.markdown(
-    '<div class="glass"><div class="section-title">Download Data</div>',
-    unsafe_allow_html=True
+st.caption(
+    "Export all recorded data into CSV, XLSX, or JSON formats. "
+    "• CSV and JSON are always available "
+    "• XLSX is available only if openpyxl exists on the server "
+    "• DateTime is exported in local time (human-readable)"
 )
 
-st.markdown(
-    """
-    <div class="helper" style="font-size:17px;">
-    Export the latest edited data into CSV, XLSX, or JSON formats.<br>
-    Downloads always reflect the <b>current table state</b>.
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# -----------------------------------------------------------------------------
+# HELPER — FORMAT DATETIME FOR EXPORT
+# -----------------------------------------------------------------------------
 
-# =============================================================================
-# PREPARE EXPORT DATA (AFTER EDIT)
-# =============================================================================
+def format_datetime_for_export(series: pd.Series) -> pd.Series:
+    dt = pd.to_datetime(series, errors="coerce")
+    dt = dt.dt.tz_localize(None)
+    return dt.dt.strftime(DISPLAY_DT_FORMAT)
 
-def prepare_export_dataframe() -> pd.DataFrame:
-    """
-    Prepare export dataframe using the latest edited data.
-    Applies formatting (MW, %, DateTime).
-    """
+# -----------------------------------------------------------------------------
+# HELPER — BUILD EXPORT DATAFRAME (MERGED)
+# -----------------------------------------------------------------------------
 
-    formatted_tables = []
+def build_export_dataframe() -> pd.DataFrame:
+    """
+    Combine SWG1 / SWG2 / SWG3 tables side-by-side
+    """
+    dfs = []
 
     for swg in SWG_LIST:
         df = st.session_state[f"{swg}_data"].copy()
 
         if df.empty:
-            formatted_tables.append(df)
+            dfs.append(
+                pd.DataFrame(
+                    columns=[
+                        f"{swg}_DateTime",
+                        f"{swg}_Power(MW)",
+                        f"{swg}_SOC(%)",
+                    ]
+                )
+            )
             continue
 
-        dt_col = f"{swg}_DateTime"
-        p_col = f"{swg}_Power(MW)"
-        s_col = f"{swg}_SOC(%)"
-
-        # ---------------- DateTime ----------------
-        series = pd.to_datetime(df[dt_col], errors="coerce")
-
-        if series.dt.tz is not None:
-            series = series.dt.tz_convert(LOCAL_TZ).dt.tz_localize(None)
-        else:
-            series = series.dt.tz_localize(None)
-
-        df[dt_col] = series.dt.strftime(DISPLAY_DT_FORMAT)
-
-        # ---------------- Units ----------------
-        df[p_col] = df[p_col].astype(str) + " MW"
-        df[s_col] = df[s_col].astype(str) + " %"
-
-        formatted_tables.append(df)
-
-    # ---------------- Align row count ----------------
-    max_len = max(len(df) for df in formatted_tables)
-
-    def pad(df, n):
-        return df.reindex(range(n))
-
-    formatted_tables = [pad(df, max_len) for df in formatted_tables]
-
-    # ---------------- Side-by-side layout ----------------
-    return pd.concat(formatted_tables, axis=1)
-
-
-export_df = prepare_export_dataframe()
-
-# =============================================================================
-# EMPTY DATA CHECK
-# =============================================================================
-
-if export_df.dropna(how="all").empty:
-    st.warning("No data available to download.")
-else:
-
-    # =============================================================================
-    # DOWNLOAD BUTTONS
-    # =============================================================================
-
-    col_csv, col_xlsx, col_json = st.columns(3)
-
-    # -------------------------------------------------------------------------
-    # CSV
-    # -------------------------------------------------------------------------
-    with col_csv:
-        st.download_button(
-            "⬇ Download CSV",
-            data=export_df.to_csv(index=False).encode("utf-8"),
-            file_name="energy_data.csv",
-            mime="text/csv",
-            use_container_width=True
+        df[f"{swg}_DateTime"] = format_datetime_for_export(
+            df[f"{swg}_DateTime"]
         )
 
-    # -------------------------------------------------------------------------
-    # XLSX (OPTIONAL)
-    # -------------------------------------------------------------------------
-    with col_xlsx:
-        openpyxl_available = importlib.util.find_spec("openpyxl") is not None
+        dfs.append(df.reset_index(drop=True))
 
-        if openpyxl_available:
+    # Align rows by index (Excel-style)
+    max_len = max(len(d) for d in dfs)
+    dfs = [d.reindex(range(max_len)) for d in dfs]
 
-            def to_excel_bytes(df: pd.DataFrame) -> bytes:
-                buffer = io.BytesIO()
-                with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-                    df.to_excel(
-                        writer,
-                        index=False,
-                        sheet_name="Energy Data"
-                    )
-                buffer.seek(0)
-                return buffer.read()
+    export_df = pd.concat(dfs, axis=1)
+    return export_df
 
-            st.download_button(
-                "⬇ Download XLSX",
-                data=to_excel_bytes(export_df),
-                file_name="energy_data.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-        else:
-            st.info("XLSX export unavailable. Install openpyxl to enable Excel downloads.")
+# -----------------------------------------------------------------------------
+# BUILD EXPORT DATA
+# -----------------------------------------------------------------------------
 
-    # -------------------------------------------------------------------------
-    # JSON
-    # -------------------------------------------------------------------------
-    with col_json:
-        st.download_button(
-            "⬇ Download JSON",
-            data=export_df.to_json(orient="records"),
-            file_name="energy_data.json",
-            mime="application/json",
-            use_container_width=True
-        )
+export_df = build_export_dataframe()
 
-st.markdown("</div>", unsafe_allow_html=True)
+# -----------------------------------------------------------------------------
+# CSV DOWNLOAD
+# -----------------------------------------------------------------------------
 
-# =============================================================================
-# EXPORT NOTES
-# =============================================================================
+csv_bytes = export_df.to_csv(index=False).encode("utf-8")
 
-st.markdown(
-    """
-    <div class="glass helper" style="font-size:15px;">
-    <b>Export Notes:</b><br>
-    • Data reflects all edits and column changes.<br>
-    • Units (MW, %) are included in exports.<br>
-    • Time is exported in local format.<br>
-    • CSV & JSON always work without dependencies.
-    </div>
-    """,
-    unsafe_allow_html=True
+st.download_button(
+    "⬇ Download CSV",
+    data=csv_bytes,
+    file_name="energy_power_data.csv",
+    mime="text/csv",
+    use_container_width=True,
 )
 
+# -----------------------------------------------------------------------------
+# JSON DOWNLOAD
+# -----------------------------------------------------------------------------
+
+json_data = export_df.to_dict(orient="records")
+json_bytes = json.dumps(json_data, indent=2).encode("utf-8")
+
+st.download_button(
+    "⬇ Download JSON",
+    data=json_bytes,
+    file_name="energy_power_data.json",
+    mime="application/json",
+    use_container_width=True,
+)
+
+# -----------------------------------------------------------------------------
+# XLSX DOWNLOAD (SAFE — OPTIONAL)
+# -----------------------------------------------------------------------------
+
+def openpyxl_available() -> bool:
+    try:
+        import openpyxl  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+if openpyxl_available():
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        export_df.to_excel(writer, index=False, sheet_name="EnergyData")
+
+    buffer.seek(0)
+
+    st.download_button(
+        "⬇ Download XLSX",
+        data=buffer,
+        file_name="energy_power_data.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True,
+    )
+else:
+    st.info(
+        "XLSX export unavailable. Install **openpyxl** to enable Excel downloads.",
+        icon="ℹ️",
+    )
+
+st.markdown('</div>', unsafe_allow_html=True)
+
 # =============================================================================
-# END OF PART 4
+# END PART 5 — DATA DOWNLOAD
 # =============================================================================
